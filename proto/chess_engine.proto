@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "github.com/Tecu23/engine-microservice/proto";
+
+service ChessEngine {
+  rpc CalculateBestMove (MoveRequest) returns (MoveResponse);
+}
+
+message MoveRequest {
+  string fen = 1;
+}
+
+message MoveResponse {
+  string best_move = 1;
+}
