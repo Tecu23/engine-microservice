@@ -1,0 +1,6 @@
+# Ignore all binaries
+*.bin
+*.exe
+*.zip
+*.tar.gz
+bin/
