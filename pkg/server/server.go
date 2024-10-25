@@ -13,7 +13,7 @@ import (
 // ChessEngineServer is a server type
 type ChessEngineServer struct {
 	enginepb.UnimplementedChessEngineServer
-	engineInterface *uci.Interface
+	workerPool *uci.WorkerPool
 }
 
 // CalculateBestMove is the actual implementation of the gRPC method
@@ -22,12 +22,9 @@ func (srv *ChessEngineServer) CalculateBestMove(
 	req *enginepb.MoveRequest,
 ) (*enginepb.MoveResponse, error) {
 
-	fen := req.Fen
+	srv.workerPool.SubmitJob(req.Fen)
 
-	bestMove, err := srv.engineInterface.GetBestMove(fen)
-	if err != nil {
-		return nil, err
-	}
+	bestMove := srv.workerPool.GetResult()
 
 	return &enginepb.MoveResponse{
 		BestMove: bestMove,
@@ -35,6 +32,6 @@ func (srv *ChessEngineServer) CalculateBestMove(
 }
 
 // RegisterServer registers the gRPC server
-func RegisterServer(grpcServer *grpc.Server, i *uci.Interface) {
-	enginepb.RegisterChessEngineServer(grpcServer, &ChessEngineServer{engineInterface: i})
+func RegisterServer(grpcServer *grpc.Server, pool *uci.WorkerPool) {
+	enginepb.RegisterChessEngineServer(grpcServer, &ChessEngineServer{workerPool: pool})
 }

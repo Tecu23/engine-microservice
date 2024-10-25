@@ -20,13 +20,14 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	engineInterface, err := uci.NewInterface()
+	workerPool, err := uci.NewWorkerPool(4)
 	if err != nil {
-		log.Fatalf("failed to initialize the chess engine interface: %v", err)
+		log.Fatalf("Failed to create the worker pool: %v", err)
 	}
+	workerPool.Start()
 
 	// register the chess engine server with the initialized engine
-	server.RegisterServer(grpcServer, engineInterface)
+	server.RegisterServer(grpcServer, workerPool)
 
 	log.Println("Chess Engine gRPC server is running on port 8089...")
 	err = grpcServer.Serve(lis)

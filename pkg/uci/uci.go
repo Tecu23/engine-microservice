@@ -8,16 +8,16 @@ import (
 	"sync"
 )
 
-// Interface is the interface connecting to the server
-type Interface struct {
+// EngineInterface is the interface connecting to the server
+type EngineInterface struct {
 	cmd    *exec.Cmd
 	writer *bufio.Writer
 	reader *bufio.Scanner
 	mu     sync.Mutex // making the engine thread safe
 }
 
-// NewInterface creates a new interface to communicate with the engine
-func NewInterface() (*Interface, error) {
+// NewEngineInterface creates a new interface to communicate with the engine
+func NewEngineInterface() (*EngineInterface, error) {
 	cmd := exec.Command("./bin/engines/stockfish")
 
 	stdin, err := cmd.StdinPipe()
@@ -46,7 +46,7 @@ func NewInterface() (*Interface, error) {
 		}
 	}
 
-	return &Interface{
+	return &EngineInterface{
 		cmd:    cmd,
 		writer: writer,
 		reader: reader,
@@ -54,7 +54,7 @@ func NewInterface() (*Interface, error) {
 }
 
 // GetBestMove returns the best move from the engine
-func (i *Interface) GetBestMove(fen string) (string, error) {
+func (i *EngineInterface) GetBestMove(fen string) (string, error) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
