@@ -6,21 +6,21 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/Tecu23/engine-microservice/package/uci"
-	"github.com/Tecu23/engine-microservice/proto"
+	"github.com/Tecu23/engine-microservice/pkg/enginepb"
+	"github.com/Tecu23/engine-microservice/pkg/uci"
 )
 
 // ChessEngineServer is a server type
 type ChessEngineServer struct {
-	proto.UnimplementedChessEngineServer
+	enginepb.UnimplementedChessEngineServer
 	engineInterface *uci.Interface
 }
 
 // CalculateBestMove is the actual implementation of the gRPC method
 func (srv *ChessEngineServer) CalculateBestMove(
 	ctx context.Context,
-	req *proto.MoveRequest,
-) (*proto.MoveResponse, error) {
+	req *enginepb.MoveRequest,
+) (*enginepb.MoveResponse, error) {
 
 	fen := req.Fen
 
@@ -29,12 +29,12 @@ func (srv *ChessEngineServer) CalculateBestMove(
 		return nil, err
 	}
 
-	return &proto.MoveResponse{
+	return &enginepb.MoveResponse{
 		BestMove: bestMove,
 	}, nil
 }
 
 // RegisterServer registers the gRPC server
 func RegisterServer(grpcServer *grpc.Server, i *uci.Interface) {
-	proto.RegisterChessEngineServer(grpcServer, &ChessEngineServer{engineInterface: i})
+	enginepb.RegisterChessEngineServer(grpcServer, &ChessEngineServer{engineInterface: i})
 }

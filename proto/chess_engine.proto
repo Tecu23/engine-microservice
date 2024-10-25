@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/Tecu23/engine-microservice/proto";
+option go_package = "enginepb/";
 
 service ChessEngine {
   rpc CalculateBestMove (MoveRequest) returns (MoveResponse);

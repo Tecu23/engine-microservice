@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: proto/chess_engine.proto
 
-package proto
+package enginepb
 
 import (
 	context "context"

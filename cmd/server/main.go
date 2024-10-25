@@ -7,8 +7,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/Tecu23/engine-microservice/package/server"
-	"github.com/Tecu23/engine-microservice/package/uci"
+	"github.com/Tecu23/engine-microservice/pkg/server"
+	"github.com/Tecu23/engine-microservice/pkg/uci"
 )
 
 func main() {
