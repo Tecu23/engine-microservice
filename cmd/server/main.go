@@ -20,7 +20,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	workerPool, err := uci.NewWorkerPool(4)
+	workerPool, err := uci.NewWorkerPool(4, 4)
 	if err != nil {
 		log.Fatalf("Failed to create the worker pool: %v", err)
 	}

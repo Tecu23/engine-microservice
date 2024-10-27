@@ -22,7 +22,7 @@ func (srv *ChessEngineServer) CalculateBestMove(
 	req *enginepb.MoveRequest,
 ) (*enginepb.MoveResponse, error) {
 
-	srv.workerPool.SubmitJob(req.Fen)
+	srv.workerPool.SubmitJob(uci.MoveRequest{Fen: req.Fen, Type: req.Type})
 
 	bestMove := srv.workerPool.GetResult()
 

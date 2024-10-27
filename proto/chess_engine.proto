@@ -8,6 +8,7 @@ service ChessEngine {
 
 message MoveRequest {
   string fen = 1;
+  string type = 2;
 }
 
 message MoveResponse {
