@@ -14,12 +14,11 @@ type ArgoEngine struct {
 	writer *bufio.Writer
 	reader *bufio.Scanner
 	mu     sync.Mutex // making the engine thread safe
-
 }
 
 // NewArgoEngine creates a new interface to communicate with the engine
 func NewArgoEngine() (*ArgoEngine, error) {
-	cmd := exec.Command("./bin/engines/stockfish")
+	cmd := exec.Command("./bin/engines/argo")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -60,7 +59,7 @@ func (i *ArgoEngine) GetBestMove(fen string) (string, error) {
 	defer i.mu.Unlock()
 
 	i.writer.WriteString(fmt.Sprintf("position fen %s\n", fen))
-	i.writer.WriteString("go depth 6\n")
+	i.writer.WriteString("go depth 10\n")
 	i.writer.Flush()
 
 	for i.reader.Scan() {
