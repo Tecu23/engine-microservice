@@ -1,5 +1,4 @@
-// Package uci should handle the engine interface for communication
-package uci
+package engineinterface
 
 // EngineInterface is the interface connecting to the server
 type EngineInterface interface {

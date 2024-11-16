@@ -1,5 +1,4 @@
-// Package uci should handle the engine interface for communication
-package uci
+package argoengine
 
 import (
 	"bufio"
