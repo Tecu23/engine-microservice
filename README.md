@@ -1,204 +1,148 @@
-# Chess Engine Microservice Architecture
+# Chess Engine Microservice
 
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?logo=go&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)
 ![gRPC](https://img.shields.io/badge/gRPC-Enabled-blue)
 
+## **Table of Contents**
+
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Authentication](#authentication)
+4. [Architecture](#architecture)
+5. [Getting Started](#getting-started)
+   1. [Prerequisites](#prerequisites)
+   2. [Installation](#installation)
+6. [Running the Application](#running-the-application)
+7. [Configuration](#configuration)
+8. [Testing](#testing)
+9. [Deployment](#deployment)
+10. [Contributing](#contributing)
+
 ## **Overview**
 
-The **Chess Engine Microservice** is designed to handle chess engine
-computations in a highly concurrent and efficient manner. It uses a
-**worker pool architecture** to manage multiple chess engine instances
-and processes chess move calculations. The service integrates with the
-frontend and backend systems, providing a scalable and modular way to
-execute chess-related computations.
+A high-performance, concurrent gRPC microservice for calculating the
+best chess moves using various chess engines. Built with Go, it supports
+multiple engine types and handles simultaneous requests securely
+and efficiently.
 
 ---
 
-## **Role of the Microservice**
+## **Features**
 
-The Chess Engine Microservice is responsible for:
-
-1. **Chess Move Computation**:
-
-   - Receives requests with chess board positions (in FEN format).
-   - Computes the best move using chess engine backends (e.g., Stockfish, Argo).
-
-2. **Worker Pool Management**:
-
-   - Maintains a pool of chess engine instances for concurrent processing.
-   - Routes requests to the appropriate engine type.
-
-3. **Efficient Resource Usage**:
-
-   - Ensures that resources (chess engine instances) are reused and not overwhelmed.
-   - Manages request queuing and results delivery efficiently.
-
-4. **Communication Middleware**:
-   - Exposes APIs over gRPC for backend communication.
-   - Relays results to the client frontend via a WebSocket.
-
----
+- **Multiple** Chess Engine Support: Easily integrate multiple engines
+  like Stockfish, Komodo, etc.
+- **Concurrent** Request Handling: Efficiently process simultaneous requests
+  using Go's concurrency model.
+- **Engine** Pooling: Manage engine instances through pooling to optimize
+  resource usage.
+- **Secure** Communication: Implement TLS encryption and token-based authentication.
+- **Scalable** Architecture: Containerized deployment with Docker and
+  orchestration support.
+- **Comprehensive** Testing: Includes unit and integration tests for reliability.
+- **Monitoring** and Logging: Structured logging and metrics for monitoring performance.
 
 ## **Architecture**
-
-### **1. High Level Architecture**
-
-- **Frontend - Webscoket Client (React)**:
-
-  - Acts as the chess game client.
-  - Communicates with the backend server over WebSocket to send user moves and
-    receive engine responses.
-
-- **Backend Server - Websocket Server/gRPC Client (Go)**:
-
-  - Acts as the gateway between the frontend and the chess engine microservice.
-  - Handles WebSocket connections with the frontend.
-  - Forwards chess move requests to the microservice via gRPC.
-
-- **Chess Engine Microservice - gRPC Server (Go)**:
-  - The core computational service.
-  - Processes requests via worker pools for specific engine types
-    (e.g., Stockfish, Argo (engine developed as a side project by me)).
-  - Sends results back to the backend server.
-
----
-
-### **2. Chess Engine Microservice Workflow**
-
-1. **Request Flow**:
-
-   - The backend server sends a chess move request (with FEN and engine type)
-     to the microservice via gRPC.
-
-2. **Worker Pool**:
-
-   - The microservice routes the request to the appropriate worker pool
-     based on the engine type.
-   - Each worker pool maintains a set of chess engine instances to handle
-     requests concurrently.
-
-3. **Result Processing**:
-
-   - Each worker computes the best move for the given FEN position.
-   - Results are stored in a thread-safe sync.Map and returned to the backend server.
-
-4. **Response Flow**:
-   - The backend server forwards the result to the frontend via WebSocket.
-
----
-
-## **Detailed Architecture Diagram**
 
 The architecture is represented in the following components and interactions:
 
 ![Screenshot](./images/microservice-diagram.png)
 
+### **1. High Level Architecture**
+
+- **Client Application**: Sends gRPC requests with authentication tokens.
+- **gRPC Server**: Receives and handles requests, applying authentication.
+- **Authentication Interceptor**: Validates tokens and enforces security.
+- **Engine Pool**: Manages engine instances for concurrency.
+- **Engine Implementations**: Specific implementations for different chess engines.
+- **Configuration Loader**: Manages application settings.
+- **Testing Modules**: Unit and integration tests to ensure code quality.
+- **Docker and Deployment Scripts**: Facilitate containerization and deployment.
+
+### **2. Request Flow**
+
+1. **Client** sends a `GetBestMove` request with `engine_type`, `fen`, and optional
+   `depth`, including an authentication token.
+2. **gRPC Server** intercepts the request, authenticates it, and passes it
+   to the handler.
+3. **Server Handler** retrieves an engine instance from the **Engine Pool**.
+4. **Engine Instance** computes the best move.
+5. **Server Handler** returns the result to the client.
+6. **Engine Instance** is returned to the **Engine Pool** for reuse.
+
 ---
 
-## **Advantages**
+## Authentication
 
-1. **Scalability**:
+The service uses token-based authentication. Clients must include a valid
+token in the request metadata.
 
-   - The microservice architecture supports horizontal scaling, allowing additional
-     workers or engine types to be added easily.
-
-2. **Concurrency**:
-
-   - Efficiently handles concurrent requests using goroutines and worker pools.
-
-3. **Modularity**:
-
-   - Decouples the frontend and backend computation logic,
-     simplifying maintenance and upgrades.
-
-4. **Performance**:
-   - Uses gRPC and worker pools to minimize latency and maximize throughput.
-
----
-
-## Setup and Installation
+## **Getting Started**
 
 ### Prerequisites
 
-- **Go**: The microservice is written in Go, so you'll need Go installed.
-- **gRPC**: Ensure that gRPC is installed and properly set up.
-- **Docker** (optional): To containerize the microservice for deployment.
+<!--  TODO: -->
 
-### Installation Steps
+### Installation
 
-1. Clone the repository:
+<!--  TODO: -->
 
-   ```sh
-   git clone https://github.com/yourusername/chess-engine-microservice.git
-   cd chess-engine-microservice
-   ```
+### Running the Application
 
-2. Install dependencies:
+<!--  TODO: -->
 
-   ```sh
-   go mod download
-   ```
+### Handling Resource Exhaustion
 
-3. Build the microservice:
+If the server's engine pool is fully utilized, you may
+receive a `ResourceExhausted` error. This indicates that no
+engine instances are currently available to process your request.
+In such cases, you can:
 
-   ```sh
-   go build -o chess_engine_service
-   ```
+- Implement retry logic with exponential backoff on the client side.
+- Increase the `ENGINE_POOL_SIZE` if server resources allow.
+- Optimize client request rates to prevent overwhelming the server.
 
-4. Run the microservice:
+## **Configuration**
 
-   ```sh
-   ./chess_engine_service
-   ```
+Configuration can be managed via environment variables or a configuration file.
 
-## Configuration
+### Environment Variables
 
-The microservice can be configured through environment variables:
+- `ENGINE_POOL_SIZE`: Number of engine instances per engine type.
+- `AUTH_TOKENS`: Comma-separated list of valid authentication tokens.
+- `ENGINE_PATH_STOCKFISH`: File path to the Stockfish binary.
+- `ENGINE_PATH_KOMODO`: File path to the Komodo binary.
+- `TLS_CERT_FILE`: Path to the TLS certificate file.
+- `ENGINE_POOL_SIZE`: Number of engine instances per engine type (default: 5).
+- `ENGINE_PATH_STOCKFISH`: File path to the Stockfish binary.
+- `ENGINE_PATH_KOMODO`: File path to the Komodo binary (if using Komodo). `TLS_KEY_FILE`: Path to the TLS key file.
 
-- **`WORKER_POOL_SIZE`**: The number of workers in each engine pool.
-- **`ENGINE_TYPE`**: Specify the type of engines to use (e.g., "stockfish").
-- **`GRPC_PORT`**: The port on which the gRPC server will listen.
+Example `.env` File
 
-## Usage
-
-- **Submit a Move Request**: Send a gRPC request to the microservice with the FEN
-  string and engine type.
-- **Receive Computed Move**: The microservice will compute the best move and send
-  it back as a gRPC response.
-
-## Example gRPC Request
-
-```proto
-todo: Add example protobuf request and response here
+```env
+env
+Copy code
+ENGINE_POOL_SIZE=5
+AUTH_TOKEN=your-secure-token
+ENGINE_PATH_STOCKFISH=/usr/local/bin/stockfish
+TLS_CERT_FILE=certs/server.crt
+TLS_KEY_FILE=certs/server.key
 ```
 
-## **Future Enhancements**
+## **Testing**
 
-1. **Dynamic Pool Management**:
+<!--  TODO: -->
 
-   - Automatically scale worker pools based on request load.
+## **Deployment**
 
-2. **Caching**:
-
-   - Implement a caching layer for frequently requested positions.
-
-3. **Monitoring**:
-
-   - Add telemetry and logging for real-time performance tracking.
-
-4. **Additional Engines**:
-   - Extend support for other chess engines or computation models.
-
----
+<!--  TODO: -->
 
 ## **Contributing**
 
-Feel free to fork the repository and submit pull requests. All contributions are
-welcome to improve the functionality, scalability, and usability of the microservice.
+Feel free to fork the repository and submit pull requests.
+All contributions are welcome to improve the functionality,
+scalability, and usability of the microservice.
 
-## **Conclusion**
+## **License**
 
-The Chess Engine Microservice provides a robust, scalable, and efficient architecture
-for managing chess move computations. Its modular design and focus on concurrency
-make it well-suited for real-time chess applications.
+This project is licensed under the MIT License - see the LICENSE file for details.

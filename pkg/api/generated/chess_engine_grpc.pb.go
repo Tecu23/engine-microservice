@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.21.12
-// source: proto/chess_engine.proto
+// source: pkg/api/chess_engine.proto
 
-package enginepb
+package generated
 
 import (
 	context "context"
@@ -117,5 +117,5 @@ var ChessEngine_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/chess_engine.proto",
+	Metadata: "pkg/api/chess_engine.proto",
 }

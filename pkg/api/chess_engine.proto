@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "generated/";
+
+service ChessEngine {
+  rpc CalculateBestMove (MoveRequest) returns (MoveResponse);
+}
+
+message MoveRequest {
+  string id = 1;
+  string fen = 2;
+  string engine_type = 3;
+  int32 depth = 4;
+}
+
+message MoveResponse {
+  string best_move = 1;
+  string engine_info = 2;
+}
