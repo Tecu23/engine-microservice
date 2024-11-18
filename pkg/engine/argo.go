@@ -1,72 +1,115 @@
-package argoengine
+package engine
 
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os/exec"
+	"strings"
 	"sync"
 )
 
 // ArgoEngine is the object that communicates with the engine
 type ArgoEngine struct {
 	cmd    *exec.Cmd
-	writer *bufio.Writer
-	reader *bufio.Scanner
+	stdin  io.WriteCloser
+	stdout io.ReadCloser
+	reader *bufio.Reader
 	mu     sync.Mutex // making the engine thread safe
 }
 
 // NewArgoEngine creates a new interface to communicate with the engine
-func NewArgoEngine() (*ArgoEngine, error) {
-	cmd := exec.Command("./bin/engines/argo")
+func NewArgoEngine(path string) (*ArgoEngine, error) {
+	// cmd := exec.Command("./bin/engines/argo")
+	engine := &ArgoEngine{}
+	engine.cmd = exec.Command(path)
 
-	stdin, err := cmd.StdinPipe()
+	var err error
+	engine.stdin, err = engine.cmd.StdinPipe()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get stdin pipe: %v", err)
 	}
 
-	stdout, err := cmd.StdoutPipe()
+	engine.stdout, err = engine.cmd.StdoutPipe()
 	if err != nil {
+		return nil, fmt.Errorf("failed to get stdout pipe: %v", err)
+	}
+
+	engine.reader = bufio.NewReader(engine.stdout)
+
+	if err := engine.cmd.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start engine: %v", err)
+	}
+
+	if err := engine.initializeUCI(); err != nil {
 		return nil, err
 	}
 
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
+	return engine, nil
+}
 
-	writer := bufio.NewWriter(stdin)
-	reader := bufio.NewScanner(stdout)
+// GetBestMove returns the best move from the engine
+func (e *ArgoEngine) CalculateBestMove(fen string, depth int) (string, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
-	writer.WriteString("uci\n")
-	writer.Flush()
+	e.sendCommand("position fen " + fen)
 
-	for reader.Scan() {
-		if reader.Text() == "uciok" {
+	e.sendCommand(fmt.Sprintf("go depth %d", depth))
+
+	var bestMove string
+	for {
+		line, err := e.reader.ReadString('\n')
+		if err != nil {
+			return "", fmt.Errorf("error reading from engine: %v", err)
+		}
+
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "bestmove") {
+			parts := strings.Split(line, " ")
+			if len(parts) >= 2 {
+				bestMove = parts[1]
+			}
 			break
 		}
 	}
 
-	return &ArgoEngine{
-		cmd:    cmd,
-		writer: writer,
-		reader: reader,
-	}, nil
+	if bestMove == "" {
+		return "", fmt.Errorf("no best move found")
+	}
+
+	return bestMove, nil
 }
 
-// GetBestMove returns the best move from the engine
-func (i *ArgoEngine) GetBestMove(fen string) (string, error) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+func (e *ArgoEngine) Close() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
-	i.writer.WriteString(fmt.Sprintf("position fen %s\n", fen))
-	i.writer.WriteString("go depth 10\n")
-	i.writer.Flush()
+	e.sendCommand("quit")
+	return e.cmd.Wait()
+}
 
-	for i.reader.Scan() {
-		line := i.reader.Text()
-		if len(line) > 8 && line[:8] == "bestmove" {
-			return line[9:], nil
+func (e *ArgoEngine) Info() string {
+	return "Argo Engine"
+}
+
+func (e *ArgoEngine) initializeUCI() error {
+	e.sendCommand("uci")
+	for {
+		line, err := e.reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("error reading from engine: %v", err)
+		}
+
+		if strings.HasPrefix(line, "uciok") {
+			break
 		}
 	}
 
-	return "", fmt.Errorf("failed to get the best move from engine")
+	return nil
+}
+
+func (e *ArgoEngine) sendCommand(cmd string) error {
+	_, err := io.WriteString(e.stdin, cmd+"\n")
+	return err
 }

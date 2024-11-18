@@ -10,7 +10,7 @@ import (
 func TestEnginePool(t *testing.T) {
 	cfg := &engine.EngineConfig{
 		EngineType: "stockfish",
-		Path:       "/path/to/stockfish",
+		Path:       "bin/engines/stockfish",
 		PoolSize:   2,
 	}
 

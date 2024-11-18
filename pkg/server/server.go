@@ -3,7 +3,6 @@ package server
 
 import (
 	"context"
-	"log"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -52,7 +51,7 @@ func (s *ChessEngineServer) CalculateBestMove(
 }
 
 // RegisterServer registers the gRPC server
-func RegisterServer(grpcServer *grpc.Server, cfg *config.Config) {
+func RegisterServer(grpcServer *grpc.Server, cfg *config.Config) (*ChessEngineServer, error) {
 	// Create engine configurations
 	engineConfigs := []*engine.EngineConfig{
 		{
@@ -66,10 +65,12 @@ func RegisterServer(grpcServer *grpc.Server, cfg *config.Config) {
 	// Create the server with engine pools
 	chessServer, err := NewChessEngineServer(engineConfigs)
 	if err != nil {
-		log.Fatalf("Failed to create server: %v", err)
+		return nil, err
 	}
 
 	generated.RegisterChessEngineServer(grpcServer, chessServer)
+
+	return chessServer, nil
 }
 
 func NewChessEngineServer(engineConfigs []*engine.EngineConfig) (*ChessEngineServer, error) {
@@ -85,4 +86,14 @@ func NewChessEngineServer(engineConfigs []*engine.EngineConfig) (*ChessEngineSer
 	}
 
 	return &ChessEngineServer{enginePools: enginePools}, nil
+}
+
+func Shutdown(ctx context.Context, grpcServer *grpc.Server, server *ChessEngineServer) error {
+	grpcServer.GracefulStop()
+
+	for _, pool := range server.enginePools {
+		pool.Close()
+	}
+
+	return nil
 }

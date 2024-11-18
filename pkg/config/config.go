@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	Version             string
 	Port                int
 	AuthTokens          []string
 	TLSCertFile         string
@@ -14,13 +15,14 @@ type Config struct {
 	EnginePathStockfish string
 }
 
-func LoadConfig() *Config {
+func LoadConfig(version string) *Config {
 	port := 8089
 
 	authTokensEnv := os.Getenv("AUTH_TOKENS")
 	authTokens := strings.Split(authTokensEnv, ",")
 
 	return &Config{
+		Version:             version,
 		Port:                port,
 		AuthTokens:          authTokens,
 		TLSCertFile:         os.Getenv("TLS_CERT_FILE"),
