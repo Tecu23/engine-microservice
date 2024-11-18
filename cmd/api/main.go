@@ -14,9 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 
-	"github.com/Tecu23/engine-microservice/pkg/auth"
 	"github.com/Tecu23/engine-microservice/pkg/config"
 	"github.com/Tecu23/engine-microservice/pkg/server"
 )
@@ -52,18 +50,18 @@ func main() {
 
 func (app *application) serve() error {
 	// Initialize authentication module, Maybe could be added to app struct
-	auth.Initialize(app.config.AuthTokens)
+	// auth.Initialize(app.config.AuthTokens)
 
 	// Initliaze credentials for grpc, Maybe could be added to app struct
-	creds, err := credentials.NewServerTLSFromFile(app.config.TLSCertFile, app.config.TLSKeyFile)
-	if err != nil {
-		return err
-	}
+	// creds, err := credentials.NewServerTLSFromFile(app.config.TLSCertFile, app.config.TLSKeyFile)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Create new gRPC Server with the credentials and auth interceptor
 	grpcServer := grpc.NewServer(
-		grpc.Creds(creds),
-		grpc.UnaryInterceptor(auth.UnaryServerInterceptor()),
+	// grpc.Creds(creds),
+	// grpc.UnaryInterceptor(auth.UnaryServerInterceptor()),
 	)
 
 	// Register this server and maybe shpuld return the new server

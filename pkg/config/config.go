@@ -28,6 +28,6 @@ func LoadConfig(version string) *Config {
 		TLSCertFile:         os.Getenv("TLS_CERT_FILE"),
 		TLSKeyFile:          os.Getenv("TLS_KEY_FILE"),
 		EnginePoolSize:      4,
-		EnginePathStockfish: "./bin/stockfish",
+		EnginePathStockfish: "./bin/engines/stockfish",
 	}
 }
