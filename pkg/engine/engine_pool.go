@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"sync"
 )
@@ -43,19 +44,24 @@ func (p *EnginePool) createEngineInstance() (Engine, error) {
 			return nil, err
 		}
 		return eng, nil
+	case "argo":
+		eng, err := NewArgoEngine(p.config.Path)
+		if err != nil {
+			return nil, err
+		}
+		return eng, nil
 	// Add cases for other engine types
 	default:
 		return nil, fmt.Errorf("unsupported engine type: %s", p.config.EngineType)
 	}
 }
 
-func (p *EnginePool) GetEngine() (Engine, error) {
+func (p *EnginePool) GetEngine(ctx context.Context) (Engine, error) {
 	select {
 	case eng := <-p.engines:
 		return eng, nil
-	default:
-		// Optionally, you can create a new engine instance if the pool is empty
-		return nil, fmt.Errorf("no available engine instances")
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 

@@ -1,0 +1,26 @@
+server:
+  port: 8089
+  version: 1.0.0
+  tlsCertFile: certs/server.crt
+  tlsKeyFile: certs/server.key
+  logLevel: debug
+
+engine:
+  poolSize: 5
+  paths:
+    stockfish: ./bin/engines/stockfish
+    argo: ./bin/engines/argo
+
+auth:
+  authType: apikey
+  authTokens:
+    - puIUReirRGDDRUZd
+    - WwybmJPalTkPwLTW
+    - nSJgdkLEAFxCHEee
+    - FxjykLcFtLDYENZS
+    - AszXeQTNvyGhmGGF
+    - BtqEoCkgEbMhrHuW
+    - cgksHkJxPudhLElL
+    - COOKJDuTVXiEpHHg
+    - WaiwJRYwMBUvwJGZ
+    - laXnteaAiKlPnCqJ

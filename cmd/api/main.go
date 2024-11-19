@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
+	"github.com/Tecu23/engine-microservice/pkg/auth"
 	"github.com/Tecu23/engine-microservice/pkg/config"
 	"github.com/Tecu23/engine-microservice/pkg/server"
 )
@@ -30,27 +30,42 @@ type application struct {
 func main() {
 	// TODO: Should add config from cli with flags (port, log level, ...)
 
-	// Initialize a config struct
-	cfg := config.LoadConfig(version)
-
 	logger := log.New()
 	logger.SetFormatter(&log.JSONFormatter{})
-	logger.SetLevel(logrus.InfoLevel)
+
+	// Initialize a config struct
+	cfg, err := config.InitConfig()
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to load configuration")
+	}
+
+	level, err := log.ParseLevel(cfg.Server.LogLevel)
+	if err != nil {
+		logger.WithError(err).Warn("Invalid log level, defaulting to 'info'")
+		level = log.InfoLevel
+	}
+	logger.SetLevel(level)
+	logger.WithFields(log.Fields{
+		"port": cfg.Server.Port,
+		"env":  os.Getenv("ENV"), // Asumming you set ENV=development|production|testing|staging
+	}).Info("configuration loaded")
 
 	app := &application{
 		config: cfg,
 		logger: logger,
 	}
 
-	err := app.serve()
+	err = app.serve()
 	if err != nil {
-		logger.Error(err)
+		app.logger.WithError(err).Fatal("failed to serve")
 	}
 }
 
 func (app *application) serve() error {
 	// Initialize authentication module, Maybe could be added to app struct
-	// auth.Initialize(app.config.AuthTokens)
+	if err := auth.Initialize(&app.config.Auth); err != nil {
+		return fmt.Errorf("failed to initialize authentication: %v", err)
+	}
 
 	// Initliaze credentials for grpc, Maybe could be added to app struct
 	// creds, err := credentials.NewServerTLSFromFile(app.config.TLSCertFile, app.config.TLSKeyFile)
@@ -60,20 +75,20 @@ func (app *application) serve() error {
 
 	// Create new gRPC Server with the credentials and auth interceptor
 	grpcServer := grpc.NewServer(
-	// grpc.Creds(creds),
-	// grpc.UnaryInterceptor(auth.UnaryServerInterceptor()),
+		// grpc.Creds(creds),
+		grpc.UnaryInterceptor(auth.UnaryServerInterceptor()),
 	)
 
 	// Register this server and maybe shpuld return the new server
 	srv, err := server.RegisterServer(grpcServer, app.config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to register server: %v", err)
 	}
 
 	// create a TCP connection on config port
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", app.config.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", app.config.Server.Port))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start tcp server: %v", err)
 	}
 
 	// channel that receives possible errors regarding the graceful shutdown
@@ -87,9 +102,7 @@ func (app *application) serve() error {
 
 		// we sent the read the signal received and log it to the console
 		s := <-quit
-		app.logger.Info("shutting down server", map[string]string{
-			"signal": s.String(),
-		})
+		app.logger.WithFields(log.Fields{"signal": s.String()}).Info("shutting down server")
 
 		// we now add a delay of 20 seconds for background jobs to complete
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -101,9 +114,8 @@ func (app *application) serve() error {
 			shutdownError <- err
 		}
 
-		app.logger.Info("completing background tasks", map[string]string{
-			"addr": lis.Addr().String(),
-		})
+		app.logger.WithFields(log.Fields{"addr": lis.Addr().String()}).
+			Info("completing background tasks")
 
 		// now we wait for the all connections to be closed to showdown the server
 		app.wg.Wait()
@@ -111,21 +123,18 @@ func (app *application) serve() error {
 	}()
 
 	// Starting listening for requests
-	app.logger.Infof("Chess Engine gRPC server is running on port %d...", app.config.Port)
+	app.logger.Infof("Chess Engine gRPC server is running on port %d...", app.config.Server.Port)
 	err = grpcServer.Serve(lis)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start grpc server: %v", err)
 	}
 
 	// checking shutdown errors
 	err = <-shutdownError
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to shutdown the project: %v", err)
 	}
 
-	app.logger.Info("stopped server", map[string]string{
-		"addr": lis.Addr().String(),
-	})
-
+	app.logger.WithFields(log.Fields{"signal": lis.Addr().String()}).Info("stopped server")
 	return nil
 }

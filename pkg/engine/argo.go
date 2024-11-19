@@ -48,6 +48,10 @@ func NewArgoEngine(path string) (*ArgoEngine, error) {
 	return engine, nil
 }
 
+func (e *ArgoEngine) Initialize() error {
+	return nil
+}
+
 // GetBestMove returns the best move from the engine
 func (e *ArgoEngine) CalculateBestMove(fen string, depth int) (string, error) {
 	e.mu.Lock()

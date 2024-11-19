@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -33,8 +34,18 @@ func (s *ChessEngineServer) CalculateBestMove(
 		)
 	}
 
-	eng, err := pool.GetEngine()
+	engineCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	eng, err := pool.GetEngine(engineCtx)
 	if err != nil {
+		if err == context.DeadlineExceeded {
+			return nil, status.Errorf(
+				codes.ResourceExhausted,
+				"no available engine instances: %v",
+				err,
+			)
+		}
 		return nil, status.Errorf(codes.ResourceExhausted, "no available engine instances: %v", err)
 	}
 	defer pool.ReturnEngine(eng)
@@ -52,18 +63,8 @@ func (s *ChessEngineServer) CalculateBestMove(
 
 // RegisterServer registers the gRPC server
 func RegisterServer(grpcServer *grpc.Server, cfg *config.Config) (*ChessEngineServer, error) {
-	// Create engine configurations
-	engineConfigs := []*engine.EngineConfig{
-		{
-			EngineType: "stockfish",
-			Path:       cfg.EnginePathStockfish,
-			PoolSize:   cfg.EnginePoolSize,
-		},
-		// Add configurations for other engines if needed
-	}
-
 	// Create the server with engine pools
-	chessServer, err := NewChessEngineServer(engineConfigs)
+	chessServer, err := NewChessEngineServer(&cfg.Engine)
 	if err != nil {
 		return nil, err
 	}
@@ -73,16 +74,21 @@ func RegisterServer(grpcServer *grpc.Server, cfg *config.Config) (*ChessEngineSe
 	return chessServer, nil
 }
 
-func NewChessEngineServer(engineConfigs []*engine.EngineConfig) (*ChessEngineServer, error) {
+func NewChessEngineServer(cfg *config.EngineConfig) (*ChessEngineServer, error) {
 	enginePools := make(map[string]*engine.EnginePool)
+	for engineType, path := range cfg.Paths {
+		poolConfig := &engine.EngineConfig{
+			EngineType: engineType,
+			Path:       path,
+			PoolSize:   cfg.PoolSize,
+		}
 
-	for _, cfg := range engineConfigs {
-		pool, err := engine.NewEnginePool(cfg)
+		pool, err := engine.NewEnginePool(poolConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		enginePools[cfg.EngineType] = pool
+		enginePools[engineType] = pool
 	}
 
 	return &ChessEngineServer{enginePools: enginePools}, nil
